@@ -46,8 +46,11 @@ const Room = (props) => {
     navigator.mediaDevices
       .getUserMedia({ video: videoConstraints, audio: true })
       .then((stream) => {
+        //
         userVideo.current.srcObject = stream;
         socketRef.current.emit("join room", roomID);
+
+        //
         socketRef.current.on("all users", (users) => {
           const peers = [];
           users.forEach((userID) => {
@@ -61,25 +64,22 @@ const Room = (props) => {
           setPeers(peers);
         });
 
+        //
         socketRef.current.on("user joined", (payload) => {
           const peer = addPeer(payload.signal, payload.callerID, stream);
           peersRef.current.push({
             peerID: payload.callerID,
             peer,
           });
-
           setPeers((users) => [...users, peer]);
         });
 
+        //
         socketRef.current.on("receiving returned signal", (payload) => {
           const item = peersRef.current.find((p) => p.peerID === payload.id);
           item.peer.signal(payload.signal);
         });
       });
-
-    return () => {
-      socketRef.current.on("user-disconnect", socketRef.current.id);
-    };
   }, []);
 
   function createPeer(userToSignal, callerID, stream) {
